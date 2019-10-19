@@ -20,7 +20,7 @@ def job():
     producer.send(topic="test-topic", value=product.to_kafka_model())
 
 
-schedule.every(10).seconds.do(job)
+schedule.every(2).seconds.do(job)
 
 while True:
     schedule.run_pending()
