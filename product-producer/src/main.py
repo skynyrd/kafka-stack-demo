@@ -16,11 +16,12 @@ producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=la
 
 
 def job():
-    product = Product.load_random()
-    producer.send(topic="test-topic", value=product.to_kafka_model())
+    for i in range(250):
+        product = Product.load_random()
+        producer.send(topic="test-topic", value=product.to_kafka_model())
 
 
-schedule.every(2).seconds.do(job)
+schedule.every(1).second.do(job)
 
 while True:
     schedule.run_pending()

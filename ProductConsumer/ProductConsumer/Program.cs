@@ -1,37 +1,52 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading;
 using Confluent.Kafka;
+using Nest;
 
 namespace ProductConsumer
 {
     static class Program
     {
+        private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions {PropertyNameCaseInsensitive = true};
+
         public static void Main()
         {
-            var conf = new ConsumerConfig
+            var client = new ElasticClient(new ConnectionSettings(new Uri("http://elastic:changeme@localhost:9200")));
+
+            using var c = new ConsumerBuilder<Ignore, string>(new ConsumerConfig
             { 
                 GroupId = "test-consumer-group",
                 BootstrapServers = "localhost:9092",
                 AutoOffsetReset = AutoOffsetReset.Earliest
-            };
-
-            using var c = new ConsumerBuilder<Ignore, string>(conf).Build();
+            }).Build();
+            
             c.Subscribe("output-test");
 
-            var cts = new CancellationTokenSource();
-            Console.CancelKeyPress += (_, e) => {
-                e.Cancel = true;
-                cts.Cancel();
-            };
+            SendProducts(c, client);
+        }
 
+        private static void SendProducts(IConsumer<Ignore, string> c, ElasticClient client)
+        {
             try
             {
+                var cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (_, e) =>
+                {
+                    e.Cancel = true;
+                    cts.Cancel();
+                };
+
                 while (true)
                 {
                     try
                     {
                         var cr = c.Consume(cts.Token);
                         Console.WriteLine($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
+
+                        var product = JsonSerializer.Deserialize<ProductDto>(cr.Value, SerializerOptions);
+
+                        client.Index(product, i => i.Index("products"));
                     }
                     catch (ConsumeException e)
                     {
