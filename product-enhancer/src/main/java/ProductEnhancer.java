@@ -22,8 +22,9 @@ public class ProductEnhancer {
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
         StreamsBuilder builder = new StreamsBuilder();
-        KStream<String, String> textLines = builder.stream("test-topic");
+        KStream<String, String> textLines = builder.stream("raw_products");
 
+        System.out.println("Stream is ready.");
         KStream<String, String> upperJson = textLines
                 .mapValues(textLine -> {
 
@@ -36,7 +37,7 @@ public class ProductEnhancer {
                     return gson.toJson(p);
                 });
 
-        upperJson.to("output-test");
+        upperJson.to("enhanced_products");
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         streams.start();

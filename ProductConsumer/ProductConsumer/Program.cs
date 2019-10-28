@@ -21,8 +21,9 @@ namespace ProductConsumer
                 AutoOffsetReset = AutoOffsetReset.Earliest
             }).Build();
             
-            c.Subscribe("output-test");
-
+            c.Subscribe("enhanced_products");
+            
+            Console.WriteLine("Consumer is ready");
             SendProducts(c, client);
         }
 
@@ -42,8 +43,6 @@ namespace ProductConsumer
                     try
                     {
                         var cr = c.Consume(cts.Token);
-                        Console.WriteLine($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
-
                         var product = JsonSerializer.Deserialize<ProductDto>(cr.Value, SerializerOptions);
 
                         client.Index(product, i => i.Index("products"));
